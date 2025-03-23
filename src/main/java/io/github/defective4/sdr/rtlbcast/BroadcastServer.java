@@ -47,7 +47,7 @@ public class BroadcastServer implements AutoCloseable {
     }
 
     public void start() throws IOException {
-        startRTL();
+        if (!props.rtlTcpOnDemand) startRTL();
         srv.bind(new InetSocketAddress(host, port));
         while (!srv.isClosed()) {
             Socket client = srv.accept();
@@ -87,18 +87,18 @@ public class BroadcastServer implements AutoCloseable {
         }
     }
 
-    private void addClient(ClientSession ses) {
+    private void addClient(ClientSession ses) throws IOException {
         synchronized (connectedClients) {
             connectedClients.add(ses);
         }
-        System.out.println("Client added. " + connectedClients.size());
+        if (props.rtlTcpOnDemand) startRTL();
     }
 
     private void removeClient(ClientSession ses) {
         synchronized (connectedClients) {
             connectedClients.remove(ses);
         }
-        System.out.println("Client removed. " + connectedClients.size());
+        if (props.rtlTcpOnDemand && connectedClients.isEmpty()) stopRTL();
     }
 
     private synchronized void startRTL() throws IOException {
@@ -126,12 +126,20 @@ public class BroadcastServer implements AutoCloseable {
                         }
                     }
                 }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+            } catch (Exception e) {}
         });
         rtlTcpReader.start();
         System.err.println("rtl_tcp started!");
+    }
+
+    private synchronized void stopRTL() {
+        System.err.println("Stopping rtl_tcp server...");
+        rtlTcp.stop();
+        if (rtlTcpReader != null) {
+            rtlTcpReader.interrupt();
+            rtlTcpReader = null;
+        }
+        System.err.println("rtl_tcp stopped!");
     }
 
 }

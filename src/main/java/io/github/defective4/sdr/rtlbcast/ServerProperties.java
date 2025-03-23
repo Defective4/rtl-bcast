@@ -8,6 +8,7 @@ public class ServerProperties {
     public int internalPort = 55555;
     public int maxClients = 0;
     public String rtlTcpArgs = "";
+    public boolean rtlTcpOnDemand = false;
     public String rtlTcpPath = "rtl_tcp";
     protected String authModel = "LAST";
 
