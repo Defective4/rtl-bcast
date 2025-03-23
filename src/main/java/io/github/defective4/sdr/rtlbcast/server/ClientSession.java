@@ -1,10 +1,13 @@
-package io.github.defective4.sdr.rtlbcast;
+package io.github.defective4.sdr.rtlbcast.server;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.InetAddress;
 import java.net.Socket;
 import java.util.Objects;
+
+import io.github.defective4.sdr.rtlbcast.RTLTcpCommand;
 
 public class ClientSession implements AutoCloseable {
 
@@ -27,8 +30,16 @@ public class ClientSession implements AutoCloseable {
         socket.close();
     }
 
+    public InetAddress getInetAddress() {
+        return socket.getInetAddress();
+    }
+
     public OutputStream getOs() {
         return os;
+    }
+
+    public int getPort() {
+        return socket.getPort();
     }
 
     public void handle() throws IOException {

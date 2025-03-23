@@ -1,4 +1,4 @@
-package io.github.defective4.sdr.rtlbcast;
+package io.github.defective4.sdr.rtlbcast.server;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -8,14 +8,20 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+
+import io.github.defective4.sdr.rtlbcast.AuthModel;
+import io.github.defective4.sdr.rtlbcast.RTLTcpCommand;
+import io.github.defective4.sdr.rtlbcast.ServerProperties;
 
 public class BroadcastServer implements AutoCloseable {
 
     private final AuthModel authModel;
     private final List<ClientSession> connectedClients = Collections.synchronizedList(new ArrayList<>());
     private final String host;
+    private final List<ClientListener> listeners = new CopyOnWriteArrayList<>();
     private final int maxClients;
     private final int port;
     private final ServerProperties props;
@@ -37,13 +43,29 @@ public class BroadcastServer implements AutoCloseable {
                 props.rtlTcpArgs.isEmpty() ? null : props.rtlTcpArgs.split(" "));
     }
 
+    public void addListener(ClientListener ls) {
+        if (!listeners.contains(ls)) listeners.add(ls);
+    }
+
     @Override
     public void close() throws IOException {
         srv.close();
     }
 
+    public List<ClientSession> getConnectedClients() {
+        return Collections.unmodifiableList(connectedClients);
+    }
+
+    public List<ClientListener> getListeners() {
+        return Collections.unmodifiableList(listeners);
+    }
+
     public RTLTcpCommand getRtlTcp() {
         return rtlTcp;
+    }
+
+    public void removeListener(ClientListener ls) {
+        listeners.remove(ls);
     }
 
     public void start() throws IOException {
@@ -91,6 +113,7 @@ public class BroadcastServer implements AutoCloseable {
         synchronized (connectedClients) {
             connectedClients.add(ses);
         }
+        listeners.forEach(ls -> ls.clientAdded(ses));
         if (props.rtlTcpOnDemand) startRTL();
     }
 
@@ -98,6 +121,7 @@ public class BroadcastServer implements AutoCloseable {
         synchronized (connectedClients) {
             connectedClients.remove(ses);
         }
+        listeners.forEach(ls -> ls.clientRemoved(ses));
         if (props.rtlTcpOnDemand && connectedClients.isEmpty()) stopRTL();
     }
 

@@ -3,6 +3,9 @@ package io.github.defective4.sdr.rtlbcast;
 import java.io.IOException;
 
 import io.github.defective4.sdr.rtlbcast.http.HttpServer;
+import io.github.defective4.sdr.rtlbcast.server.BroadcastServer;
+import io.github.defective4.sdr.rtlbcast.server.ClientListener;
+import io.github.defective4.sdr.rtlbcast.server.ClientSession;
 
 public class Main {
 
@@ -13,6 +16,21 @@ public class Main {
             ServerProperties props = new ServerProperties();
             try (BroadcastServer bcast = new BroadcastServer(props);
                     HttpServer server = new HttpServer(props.httpServerHost, props.httpServerPort)) {
+                bcast.addListener(new ClientListener() {
+                    @Override
+                    public void clientAdded(ClientSession session) {
+                        System.err
+                                .println("Client [" + session.getInetAddress() + "] connected. Total clients: "
+                                        + bcast.getConnectedClients().size());
+                    }
+
+                    @Override
+                    public void clientRemoved(ClientSession session) {
+                        System.err
+                                .println("Client [" + session.getInetAddress() + "] disconnected. Total clients: "
+                                        + bcast.getConnectedClients().size());
+                    }
+                });
                 server.addListener((path, query) -> {
                     if ("/sdrctl/gain".equals(path)) {
                         try {
