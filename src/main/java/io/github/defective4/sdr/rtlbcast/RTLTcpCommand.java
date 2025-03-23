@@ -35,6 +35,7 @@ public class RTLTcpCommand {
     }
 
     public void forceGain(byte gain) throws IOException {
+        if (!isAlive()) throw new IOException("rtl_tcp is not started");
         byte[] command = {
                 13, 0, 0, 0, (byte) Math.min(28, Math.max(gain, 0))
         };

@@ -14,8 +14,36 @@ public class Main {
     public static void main(String[] args) {
         try {
             ServerProperties props = new ServerProperties();
-            try (BroadcastServer bcast = new BroadcastServer(props);
-                    HttpServer server = new HttpServer(props.httpServerHost, props.httpServerPort)) {
+            try (BroadcastServer bcast = new BroadcastServer(props)) {
+                if (props.httpEnable) {
+                    HttpServer server = new HttpServer(props.httpServerHost, props.httpServerPort);
+                    server.addListener((path, query) -> {
+                        if ("/sdrctl/gain".equals(path)) {
+                            if (!bcast.getRtlTcp().isAlive()) return null;
+                            try {
+                                if (!query.containsKey("gain")) throw new IllegalStateException();
+                                lastGain = Byte.parseByte(query.get("gain"));
+                                bcast.getRtlTcp().forceGain(lastGain);
+                                return "";
+                            } catch (Throwable e) {
+                                return Byte.toString(lastGain);
+                            }
+                        }
+                        return null;
+                    });
+                    Thread.startVirtualThread(() -> {
+                        try {
+                            server.start();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                            try {
+                                server.close();
+                            } catch (IOException e1) {
+                                e1.printStackTrace();
+                            }
+                        }
+                    });
+                }
                 bcast.addListener(new ClientListener() {
                     @Override
                     public void clientAdded(ClientSession session) {
@@ -31,33 +59,11 @@ public class Main {
                                         + bcast.getConnectedClients().size());
                     }
                 });
-                server.addListener((path, query) -> {
-                    if ("/sdrctl/gain".equals(path)) {
-                        try {
-                            if (!query.containsKey("gain")) throw new IllegalStateException();
-                            lastGain = Byte.parseByte(query.get("gain"));
-                            bcast.getRtlTcp().forceGain(lastGain);
-                        } catch (Exception e) {
-                            return Byte.toString(lastGain);
-                        }
-                    }
-                    return null;
-                });
-                Thread.startVirtualThread(() -> {
-                    try {
-                        server.start();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                        try {
-                            server.close();
-                        } catch (IOException e1) {
-                            e1.printStackTrace();
-                        }
-                    }
-                });
                 bcast.start();
             }
-        } catch (Exception e) {
+        } catch (
+
+        Exception e) {
             e.printStackTrace();
         }
     }
