@@ -99,7 +99,7 @@ public class HttpServer implements AutoCloseable {
                     }
 
                     byte[] contentData = content.getBytes(StandardCharsets.UTF_8);
-                    writer.ptintln("Access-Control-Allow-Origin: *");
+                    writer.println("Access-Control-Allow-Origin: *");
                     writer.println("HTTP/1.1 " + status);
                     writer.println("Server: rtl-bcast");
                     writer.println("Connection: close");
