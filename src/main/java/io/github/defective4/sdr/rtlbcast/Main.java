@@ -1,5 +1,6 @@
 package io.github.defective4.sdr.rtlbcast;
 
+import java.io.File;
 import java.io.IOException;
 
 import io.github.defective4.sdr.rtlbcast.http.HttpServer;
@@ -13,7 +14,15 @@ public class Main {
 
     public static void main(String[] args) {
         try {
-            ServerProperties props = new ServerProperties();
+            File propsFile = new File("rtl-bcast.properties");
+            ServerProperties props = new ServerProperties(propsFile);
+            if (!propsFile.exists()) {
+                props.save();
+                System.err.println("Saved default " + propsFile.getName());
+                System.exit(1);
+                return;
+            }
+            if (props.load()) System.err.println("Loaded properties from " + propsFile.getName());
             try (BroadcastServer bcast = new BroadcastServer(props)) {
                 if (props.httpEnable) {
                     HttpServer server = new HttpServer(props.httpServerHost, props.httpServerPort);
@@ -33,6 +42,9 @@ public class Main {
                     });
                     Thread.startVirtualThread(() -> {
                         try {
+                            System.err
+                                    .println("Starting HTTP server on " + props.httpServerHost + ":"
+                                            + props.httpServerPort);
                             server.start();
                         } catch (IOException e) {
                             e.printStackTrace();
@@ -59,11 +71,14 @@ public class Main {
                                         + bcast.getConnectedClients().size());
                     }
                 });
+                System.err.println("Starting rtl-bcast server on " + props.bindHost + ":" + props.bindPort);
+                if (props.rtlTcpOnDemand) System.err
+                        .println("rtl-bcast is on on-demand mode. rtl_tcp won't start until the first connection.");
+                System.err.println("Auth model is " + props.getAuthModel());
                 bcast.start();
             }
-        } catch (
-
-        Exception e) {
+        } catch (Exception e) {
+            System.exit(2);
             e.printStackTrace();
         }
     }
