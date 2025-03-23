@@ -34,6 +34,13 @@ public class RTLTcpCommand {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> { if (process != null) process.destroyForcibly(); }));
     }
 
+    public void forceGain(byte gain) throws IOException {
+        byte[] command = {
+                13, 0, 0, 0, (byte) Math.min(28, Math.max(gain, 0))
+        };
+        writeData(command, command.length);
+    }
+
     public InputStream getInput() {
         return input;
     }

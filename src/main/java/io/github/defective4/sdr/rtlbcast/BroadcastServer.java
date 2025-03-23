@@ -42,6 +42,10 @@ public class BroadcastServer implements AutoCloseable {
         srv.close();
     }
 
+    public RTLTcpCommand getRtlTcp() {
+        return rtlTcp;
+    }
+
     public void start() throws IOException {
         startRTL();
         srv.bind(new InetSocketAddress(host, port));
